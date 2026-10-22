@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # PLUM921 · 像素小屋
 
 个人主页静态站点（纯 HTML / CSS / JS，无构建、无依赖），可直接部署到 GitHub Pages。
@@ -134,3 +135,21 @@ pageSize: { artworks: 12, codeDemos: 8, videos: 4 }
 - `fonts/ark-pixel-12px-proportional-zh-hans.woff2`
 
 如需更新，去 [Releases](https://github.com/TakWolf/ark-pixel-font/releases) 下载 `...-12px-proportional-otf.woff2-*.zip` 覆盖同名文件即可（建议保持文件名不变）。
+=======
+## Hi there 👋
+
+<!--
+**Plum921-dowhat/Plum921-dowhat** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
+
+Here are some ideas to get you started:
+
+- 🔭 I’m currently working on ...
+- 🌱 I’m currently learning ...
+- 👯 I’m looking to collaborate on ...
+- 🤔 I’m looking for help with ...
+- 💬 Ask me about ...
+- 📫 How to reach me: ...
+- 😄 Pronouns: ...
+- ⚡ Fun fact: ...
+-->
+>>>>>>> 10afdf778f4deea3862119aedb124b40bf48b428
