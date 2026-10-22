@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PLUM921 · 像素小屋</title>
-<meta name="description" content="PLUM921 的个人主页 —— 画作与代码演示的像素风格收藏室。">
+<title>PLUM921 · 个人主页</title>
+<meta name="description" content="PLUM921 的个人主页 —— 画作与代码演示的收藏室。">
 <meta name="theme-color" content="#F5EEE1">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 
@@ -73,7 +73,7 @@
         <p class="hero__role" id="heroRole">画画 / 写代码 / 做点小东西</p>
 
         <p class="hero__intro" id="heroIntro">
-          这里是我的像素小屋。左边挂画，右边跑代码。
+          这里是我的个人介绍网站。左边挂画，右边跑代码。
           目前装修中，素材陆续搬进来。
         </p>
 
@@ -119,8 +119,8 @@
   <section class="section" id="art">
     <div class="wrap">
       <header class="sec-head">
-        <h2 class="sec-title"><span class="sec-title__mark" aria-hidden="true"></span>画作画廊</h2>
-        <p class="sec-sub">手绘、板绘、像素画——都往这儿挂。</p>
+        <h2 class="sec-title"><span class="sec-title__mark" aria-hidden="true"></span>画作画坊</h2>
+        <p class="sec-sub">手绘、板绘、像素画——都往这儿挂</p>
       </header>
 
       <!-- 筛选按钮由 data.js 的 tags 自动生成 -->
@@ -170,8 +170,8 @@
 
       <div class="about">
         <div class="about__text px-frame">
-          <p id="aboutP1">NICE TO MEET YOU —— 我是个喜欢画画也喜欢折腾代码的人，习惯用像素格子把想法摆整齐。</p>
-          <p id="aboutP2">白天写程序，晚上涂涂抹抹。这个站点用来存放作品与实验，慢慢更新，不着急。</p>
+          <p id="aboutP1">NICE TO MEET YOU —— 这里是黄时plum，曾是资深二次元，现在也是，不过又多了一层码农属性。</p>
+          <p id="aboutP2">如果你也白天上班晚上画画，生活强度将会赛神仙。这个站点用来存放作品与实验，慢慢更新，不着急。</p>
         </div>
 
         <!-- 【素材预留】数值面板：在 js/data.js 的 stats 里改 -->
@@ -200,18 +200,8 @@
 </footer>
 
 <!-- ======================= 图片灯箱 ======================= -->
-<div class="lightbox" id="lightbox" hidden tabindex="-1">
-
-  <!-- 缩放工具条：仅从画作画廊进入时显示（代码截图保持原来的简洁模式） -->
-  <div class="lightbox__tools" id="lbTools" hidden>
-    <button class="lightbox__tool" id="lbZoomOut" type="button" aria-label="缩小">−</button>
-    <span class="lightbox__zoom" id="lbZoomVal">100%</span>
-    <button class="lightbox__tool" id="lbZoomIn" type="button" aria-label="放大">＋</button>
-    <button class="lightbox__tool" id="lbZoomFit" type="button" aria-label="适应窗口">适应</button>
-    <button class="lightbox__tool" id="lbFull" type="button" aria-label="全屏展示">全屏</button>
-    <span class="lightbox__hint">滚轮缩放 · 拖拽平移 · 双击放大 · F 全屏</span>
-  </div>
-
+<div class="lightbox" id="lightbox" hidden>
+  <button class="lightbox__close" id="lbClose" type="button" aria-label="关闭">×</button>
   <button class="lightbox__nav lightbox__nav--prev" id="lbPrev" type="button" aria-label="上一张">‹</button>
   <figure class="lightbox__figure">
     <img id="lbImg" src="" alt="">
