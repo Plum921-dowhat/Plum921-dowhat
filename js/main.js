@@ -413,14 +413,99 @@
     }
   }
 
-  /* ---------------- 灯箱 ---------------- */
+  /* ---------------- 灯箱（画作 = 缩放浏览模式；代码截图 = 简洁模式） ---------------- */
   var lb = $("#lightbox"), lbImg = $("#lbImg"), lbTitle = $("#lbTitle"), lbMeta = $("#lbMeta");
+  var lbTools = $("#lbTools"), lbZoomVal = $("#lbZoomVal");
   var lbIndex = 0, lbList = [];
+
+  // 缩放状态：仅从画作画廊进入时生效（zm.on），代码截图保持原行为
+  var zm = { s: 1, tx: 0, ty: 0, min: 1, max: 8, on: false };
+  var pointers = new Map();
+  var pinchDist = 0;
+
+  // 全屏辅助（Fullscreen API，Safari 走 webkit 前缀兜底）
+  function fsActive() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement);
+  }
+  function fsRequest() {
+    if (lb.requestFullscreen) {
+      var p = lb.requestFullscreen();
+      if (p && p.catch) p.catch(function () {});   // 非用户手势等场景被拒绝时静默
+    } else if (lb.webkitRequestFullscreen) {
+      lb.webkitRequestFullscreen();
+    }
+  }
+  function fsExit() {
+    if (document.exitFullscreen) document.exitFullscreen();
+    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+  }
+  function fsToggle() { fsActive() ? fsExit() : fsRequest(); }
+
+  // 全屏铺满：自动放大到图片短边撑满整个屏幕（cover），
+  // 长边溢出部分拖拽平移查看；必要时临时上调缩放上限
+  var ZM_MAX_BASE = 8;
+  function fsCoverZoom() {
+    if (!fsActive()) return;
+    zoomReset();
+    // 图片尚未加载完时先等加载，避免量到空框尺寸
+    if (!lbImg.complete || !lbImg.naturalWidth) {
+      lbImg.addEventListener("load", function () { if (fsActive()) fsCoverZoom(); }, { once: true });
+      return;
+    }
+    var w = lbImg.offsetWidth, h = lbImg.offsetHeight;   // 基准渲染尺寸（s=1）
+    if (!w || !h) return;
+    var cover = Math.max(window.innerWidth / w, window.innerHeight / h);
+    if (cover > 1.02) {
+      if (cover > zm.max) zm.max = Math.ceil(cover);
+      zoomAt(window.innerWidth / 2, window.innerHeight / 2, cover);
+    }
+  }
+
+  function zoomApply() {
+    lbImg.style.transform = "translate(" + zm.tx + "px," + zm.ty + "px) scale(" + zm.s + ")";
+    if (lbZoomVal) lbZoomVal.textContent = Math.round(zm.s * 100) + "%";
+    lbImg.classList.toggle("is-zoomable", zm.on);
+    lbImg.classList.toggle("is-zoomed", zm.on && zm.s > 1);
+  }
+  function zoomReset() {
+    zm.s = 1; zm.tx = 0; zm.ty = 0;
+    if (zm.on) zoomApply(); else lbImg.style.transform = "";
+  }
+  function clampPan() {
+    // 平移边界按图片实际渲染尺寸动态计算（offsetWidth/Height 不受 transform 影响），
+    // 图片超出视口的方向才允许拖动；铺满后刚好推到边缘为止
+    var w = lbImg.offsetWidth * zm.s, h = lbImg.offsetHeight * zm.s;
+    var limX = Math.max(0, (w - window.innerWidth) / 2);
+    var limY = Math.max(0, (h - window.innerHeight) / 2);
+    zm.tx = Math.max(-limX, Math.min(limX, zm.tx));
+    zm.ty = Math.max(-limY, Math.min(limY, zm.ty));
+  }
+  // 以屏幕点 (mx,my) 为锚点缩放，保证指着的像素不跑
+  function zoomAt(mx, my, factor) {
+    if (!zm.on) return;
+    var ns = Math.min(zm.max, Math.max(zm.min, zm.s * factor));
+    if (ns === zm.s) return;
+    var rect = lbImg.getBoundingClientRect();
+    var bcx = rect.left + rect.width / 2 - zm.tx;   // 未变换时的图心
+    var bcy = rect.top + rect.height / 2 - zm.ty;
+    var Mx = mx - bcx, My = my - bcy;
+    zm.tx = Mx - (ns / zm.s) * (Mx - zm.tx);
+    zm.ty = My - (ns / zm.s) * (My - zm.ty);
+    zm.s = ns;
+    clampPan();
+    zoomApply();
+  }
+  function zoomCenter(factor) {
+    zoomAt(window.innerWidth / 2, window.innerHeight / 2, factor);
+  }
 
   function paint() {
     var card = lbList[lbIndex];
     if (!card) return;
     var item = card._item;
+    zm.on = (card._kind || "art") === "art";
+    if (lbTools) lbTools.hidden = !zm.on;
+    zoomReset();
     lbImg.src = item.src;
     lbImg.alt = item.title || "";
     lbTitle.textContent = item.title || "";
@@ -434,11 +519,13 @@
     paint();
     lb.hidden = false;
     document.body.style.overflow = "hidden";
-    $("#lbClose").focus();
+    lb.focus();   // 焦点交给灯箱容器（keydown 挂在 document 上，ESC/方向键照常工作）
   }
   function closeLightbox() {
     lb.hidden = true;
     lbImg.src = "";
+    zm.on = false;
+    if (fsActive()) fsExit();          // 直接关闭时顺手退出全屏
     document.body.style.overflow = "";
   }
   function step(delta) {
@@ -449,15 +536,27 @@
 
   function bindLightbox() {
     if (!lb) return;
-    $("#lbClose").addEventListener("click", closeLightbox);
     $("#lbPrev").addEventListener("click", function () { step(-1); });
     $("#lbNext").addEventListener("click", function () { step(1); });
     lb.addEventListener("click", function (e) { if (e.target === lb) closeLightbox(); });
 
     document.addEventListener("keydown", function (e) {
-      if (!lb.hidden && e.key === "Escape") closeLightbox();
-      if (!lb.hidden && e.key === "ArrowLeft") step(-1);
-      if (!lb.hidden && e.key === "ArrowRight") step(1);
+      if (lb.hidden) return;
+      // 全屏中按 ESC：交给浏览器先退全屏，不要连灯箱一起关掉
+      if (e.key === "Escape") {
+        if (fsActive()) return;
+        closeLightbox();
+        return;
+      }
+      if (e.key === "ArrowLeft") step(-1);
+      if (e.key === "ArrowRight") step(1);
+      // 画作模式：+/- 缩放，0 复位，F 全屏
+      if (zm.on) {
+        if (e.key === "+" || e.key === "=") zoomCenter(1.3);
+        if (e.key === "-") zoomCenter(1 / 1.3);
+        if (e.key === "0") zoomReset();
+        if (e.key === "f" || e.key === "F") fsToggle();
+      }
     });
 
     // 事件委托：卡片缩略图点击（画作 + 代码截图都能放大看）
@@ -471,6 +570,83 @@
         if (card) openLightbox(grid, card);
       });
     });
+
+    /* ---- 缩放浏览（仅画作模式） ---- */
+    if (lbTools) {
+      $("#lbZoomIn").addEventListener("click", function () { zoomCenter(1.3); });
+      $("#lbZoomOut").addEventListener("click", function () { zoomCenter(1 / 1.3); });
+      $("#lbZoomFit").addEventListener("click", zoomReset);
+
+      /* ---- 全屏展示按钮 ---- */
+      var lbFull = $("#lbFull");
+      if (lbFull) {
+        lbFull.addEventListener("click", fsToggle);
+        // 进入全屏 → 自动铺满放大；退出 → 恢复缩放上限并复位取景
+        var onFsChange = function () {
+          var on = fsActive();
+          lbFull.textContent = on ? "退出" : "全屏";
+          lbFull.setAttribute("aria-label", on ? "退出全屏" : "全屏展示");
+          if (on) fsCoverZoom();
+          else { zm.max = ZM_MAX_BASE; zoomReset(); }
+        };
+        document.addEventListener("fullscreenchange", onFsChange);
+        document.addEventListener("webkitfullscreenchange", onFsChange);
+      }
+    }
+
+    // 滚轮缩放（以光标为锚点）；代码模式下不拦截，保持原行为
+    lb.addEventListener("wheel", function (e) {
+      if (!zm.on) return;
+      e.preventDefault();
+      zoomAt(e.clientX, e.clientY, e.deltaY < 0 ? 1.12 : 1 / 1.12);
+    }, { passive: false });
+
+    // 双击：适应 ↔ 放大 250%
+    lbImg.addEventListener("dblclick", function (e) {
+      if (!zm.on) return;
+      if (zm.s > 1.05) zoomReset();
+      else zoomAt(e.clientX, e.clientY, 2.5 / zm.s);
+    });
+
+    // 拖拽平移 + 双指捏合（Pointer Events，鼠标 / 触屏通用）
+    lbImg.addEventListener("pointerdown", function (e) {
+      if (!zm.on) return;
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pointers.size === 2) {
+        var pts = Array.from(pointers.values());
+        pinchDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      } else if (zm.s > 1) {
+        lbImg.classList.add("is-dragging");
+        try { lbImg.setPointerCapture(e.pointerId); } catch (err) {}
+      }
+      e.preventDefault();
+    });
+    lbImg.addEventListener("pointermove", function (e) {
+      if (!zm.on || !pointers.has(e.pointerId)) return;
+      var prev = pointers.get(e.pointerId);
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+      if (pointers.size === 1 && zm.s > 1) {
+        zm.tx += e.clientX - prev.x;
+        zm.ty += e.clientY - prev.y;
+        clampPan();
+        zoomApply();
+      } else if (pointers.size === 2) {
+        var pts2 = Array.from(pointers.values());
+        var d = Math.hypot(pts2[0].x - pts2[1].x, pts2[0].y - pts2[1].y);
+        var midx = (pts2[0].x + pts2[1].x) / 2;
+        var midy = (pts2[0].y + pts2[1].y) / 2;
+        if (pinchDist > 0 && d > 0) zoomAt(midx, midy, d / pinchDist);
+        pinchDist = d;
+      }
+    });
+    function endPointer(e) {
+      pointers.delete(e.pointerId);
+      pinchDist = 0;
+      if (!pointers.size) lbImg.classList.remove("is-dragging");
+    }
+    lbImg.addEventListener("pointerup", endPointer);
+    lbImg.addEventListener("pointercancel", endPointer);
   }
 
   /* ---------------- 视频弹窗 ---------------- */
