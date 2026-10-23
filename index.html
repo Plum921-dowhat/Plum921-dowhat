@@ -200,8 +200,18 @@
 </footer>
 
 <!-- ======================= 图片灯箱 ======================= -->
-<div class="lightbox" id="lightbox" hidden>
-  <button class="lightbox__close" id="lbClose" type="button" aria-label="关闭">×</button>
+<div class="lightbox" id="lightbox" hidden tabindex="-1">
+
+  <!-- 缩放工具条：仅从画作画廊进入时显示（代码截图保持原来的简洁模式） -->
+  <div class="lightbox__tools" id="lbTools" hidden>
+    <button class="lightbox__tool" id="lbZoomOut" type="button" aria-label="缩小">−</button>
+    <span class="lightbox__zoom" id="lbZoomVal">100%</span>
+    <button class="lightbox__tool" id="lbZoomIn" type="button" aria-label="放大">＋</button>
+    <button class="lightbox__tool" id="lbZoomFit" type="button" aria-label="适应窗口">适应</button>
+    <button class="lightbox__tool" id="lbFull" type="button" aria-label="全屏展示">全屏</button>
+    <span class="lightbox__hint">滚轮缩放 · 拖拽平移 · 双击放大 · F 全屏</span>
+  </div>
+
   <button class="lightbox__nav lightbox__nav--prev" id="lbPrev" type="button" aria-label="上一张">‹</button>
   <figure class="lightbox__figure">
     <img id="lbImg" src="" alt="">
